@@ -1,4 +1,4 @@
-interface Wallet {
+interface IWallet {
   name: string;
   description: string;
   startingBalance: number;

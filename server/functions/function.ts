@@ -43,7 +43,7 @@ export async function handlerCreate(event: APIGatewayEvent) {
 
 // Implement other handlers similarly for read, update, and delete operations
 export async function handlerRead(event: APIGatewayEvent) {
-  const walletId = event.pathParameters?.id;
+  const walletId = event.pathParameters?.walletId;
 
   if (!walletId) {
     return {
@@ -81,8 +81,28 @@ export async function handlerRead(event: APIGatewayEvent) {
   }
 }
 
+export const handlerGetAll: Handler = async () => {
+  const params = {
+    TableName: process.env.WALLET_TABLE_NAME || '',
+  };
+
+  try {
+    const { Items } = await dynamoDB.scan(params).promise();
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(Items),
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Error fetching wallets', error }),
+    };
+  }
+};
+
 export async function handlerUpdate(event: APIGatewayEvent) {
-  const walletId = event.pathParameters?.id;
+  const walletId = event.pathParameters?.walletId;
 
   if (!walletId) {
     return {
@@ -149,7 +169,7 @@ export async function handlerUpdate(event: APIGatewayEvent) {
 }
 
 export async function handlerDelete(event: APIGatewayEvent) {
-  const walletId = event.pathParameters?.id;
+  const walletId = event.pathParameters?.walletId;
 
   if (!walletId) {
     return {

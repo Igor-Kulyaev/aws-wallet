@@ -24,6 +24,14 @@ export class ServerStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    //Dynamodb Income table definition
+    const incomeTable = new Table(this, 'IncomeTable', {
+      partitionKey: { name: 'id', type: AttributeType.STRING },
+      tableName: 'IncomesTable',
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    // CRUD lambdas for wallet
     const createWalletLambda = new NodejsFunction(this, 'CreateWalletLambda', {
       runtime: Runtime.NODEJS_18_X,
       entry: path.join(__dirname, `/../functions/function.ts`),
@@ -64,13 +72,75 @@ export class ServerStack extends Stack {
       role: lambdaExecutionRole, // Assign the execution role to the Lambda function
     });
 
+    const getAllWalletsLambda = new NodejsFunction(this, 'GetAllWalletsLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/function.ts`),
+      handler: 'handlerGetAll',
+      environment: {
+        WALLET_TABLE_NAME: walletTable.tableName,
+      },
+      role: lambdaExecutionRole,
+    });
+
+    //CRUD lambdas for income
+    const createIncomeLambda = new NodejsFunction(this, 'CreateIncomeLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/income.ts`),
+      handler: "handlerCreate",
+      environment: {
+        INCOME_TABLE_NAME: incomeTable.tableName,
+      },
+      role: lambdaExecutionRole, // Assign the execution role to the Lambda function
+    });
+
+    const readIncomeLambda = new NodejsFunction(this, 'ReadIncomeLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/income.ts`),
+      handler: "handlerRead",
+      environment: {
+        INCOME_TABLE_NAME: incomeTable.tableName,
+      },
+      role: lambdaExecutionRole, // Assign the execution role to the Lambda function
+    });
+
+    const updateIncomeLambda = new NodejsFunction(this, 'UpdateIncomeLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/income.ts`),
+      handler: "handlerUpdate",
+      environment: {
+        INCOME_TABLE_NAME: incomeTable.tableName,
+      },
+      role: lambdaExecutionRole, // Assign the execution role to the Lambda function
+    });
+
+    const deleteIncomeLambda = new NodejsFunction(this, 'DeleteIncomeLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/income.ts`),
+      handler: "handlerDelete",
+      environment: {
+        INCOME_TABLE_NAME: incomeTable.tableName,
+      },
+      role: lambdaExecutionRole, // Assign the execution role to the Lambda function
+    });
+
+    const getAllIncomesLambda = new NodejsFunction(this, 'GetAllIncomesLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/income.ts`),
+      handler: 'handlerGetAll',
+      environment: {
+        INCOME_TABLE_NAME: incomeTable.tableName,
+      },
+      role: lambdaExecutionRole,
+    });
+
     // Attach the AWS managed policy to the execution role
+    // Permissions for logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents, and cloudwatch:PutMetricData
     lambdaExecutionRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'));
 
     lambdaExecutionRole.addToPolicy(
       new PolicyStatement({
-        actions: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem'],
-        resources: [walletTable.tableArn], // Replace `walletTable` with your DynamoDB table object reference
+        actions: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:Scan'],
+        resources: [walletTable.tableArn, incomeTable.tableArn], // Replace `walletTable` with your DynamoDB table object reference
       })
     );
 
@@ -82,14 +152,24 @@ export class ServerStack extends Stack {
       },
     });
 
+    // API methods for wallets
     const wallets = api.root.addResource('wallets');
-    wallets.addMethod('GET', new LambdaIntegration(readWalletLambda));
+    wallets.addMethod('GET', new LambdaIntegration(getAllWalletsLambda));
     wallets.addMethod('POST', new LambdaIntegration(createWalletLambda));
 
-    const singleWallet = wallets.addResource('{id}');
+    const singleWallet = wallets.addResource('{walletId}');
     singleWallet.addMethod('GET', new LambdaIntegration(readWalletLambda));
     singleWallet.addMethod('PUT', new LambdaIntegration(updateWalletLambda));
     singleWallet.addMethod('DELETE', new LambdaIntegration(deleteWalletLambda));
+
+    const incomes = singleWallet.addResource('incomes');
+    incomes.addMethod('GET', new LambdaIntegration(getAllIncomesLambda));
+    incomes.addMethod('POST', new LambdaIntegration(createIncomeLambda));
+
+    const singleIncome = incomes.addResource('{incomeId}');
+    singleIncome.addMethod('GET', new LambdaIntegration(readIncomeLambda));
+    singleIncome.addMethod('PUT', new LambdaIntegration(updateIncomeLambda));
+    singleIncome.addMethod('DELETE', new LambdaIntegration(deleteIncomeLambda));
 
   }
 }
