@@ -17,6 +17,7 @@ export async function handlerCreate(event: APIGatewayEvent) {
   const id = Math.floor(Math.random() * 1000000).toString(); // Generate a random whole number as ID
   const walletItem = {
     ...walletData,
+    currentBalance: walletData.startingBalance,
     id: id, // Generate a random ID (replace with UUID or your ID generation logic)
     createdAt: timestamp,
     updatedAt: timestamp,

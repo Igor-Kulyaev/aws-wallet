@@ -96,6 +96,7 @@ export class ServerStack extends Stack {
       handler: "handlerCreate",
       environment: {
         INCOME_TABLE_NAME: incomeTable.tableName,
+        WALLET_TABLE_NAME: walletTable.tableName,
       },
       role: lambdaExecutionRole, // Assign the execution role to the Lambda function
     });
@@ -106,6 +107,7 @@ export class ServerStack extends Stack {
       handler: "handlerRead",
       environment: {
         INCOME_TABLE_NAME: incomeTable.tableName,
+        WALLET_TABLE_NAME: walletTable.tableName,
       },
       role: lambdaExecutionRole, // Assign the execution role to the Lambda function
     });
@@ -116,6 +118,7 @@ export class ServerStack extends Stack {
       handler: "handlerUpdate",
       environment: {
         INCOME_TABLE_NAME: incomeTable.tableName,
+        WALLET_TABLE_NAME: walletTable.tableName,
       },
       role: lambdaExecutionRole, // Assign the execution role to the Lambda function
     });
@@ -126,6 +129,7 @@ export class ServerStack extends Stack {
       handler: "handlerDelete",
       environment: {
         INCOME_TABLE_NAME: incomeTable.tableName,
+        WALLET_TABLE_NAME: walletTable.tableName,
       },
       role: lambdaExecutionRole, // Assign the execution role to the Lambda function
     });
@@ -136,6 +140,7 @@ export class ServerStack extends Stack {
       handler: 'handlerGetAll',
       environment: {
         INCOME_TABLE_NAME: incomeTable.tableName,
+        WALLET_TABLE_NAME: walletTable.tableName,
       },
       role: lambdaExecutionRole,
     });
