@@ -31,11 +31,21 @@ export class ServerStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    incomeTable.addGlobalSecondaryIndex({
+      indexName: 'walletIdIndex',
+      partitionKey: { name: 'walletId', type: AttributeType.STRING },
+    });
+
     //Dynamodb Expense table definition
     const expenseTable = new Table(this, 'ExpenseTable', {
       partitionKey: { name: 'id', type: AttributeType.STRING },
       tableName: 'ExpensesTable',
       removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    expenseTable.addGlobalSecondaryIndex({
+      indexName: 'walletIdIndex',
+      partitionKey: { name: 'walletId', type: AttributeType.STRING },
     });
 
     // CRUD lambdas for wallet
@@ -75,6 +85,8 @@ export class ServerStack extends Stack {
       handler: "handlerDelete",
       environment: {
         WALLET_TABLE_NAME: walletTable.tableName,
+        INCOME_TABLE_NAME: incomeTable.tableName,
+        EXPENSE_TABLE_NAME: expenseTable.tableName,
       },
       role: lambdaExecutionRole, // Assign the execution role to the Lambda function
     });
@@ -222,8 +234,21 @@ export class ServerStack extends Stack {
 
     lambdaExecutionRole.addToPolicy(
       new PolicyStatement({
-        actions: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:Scan'],
-        resources: [walletTable.tableArn, incomeTable.tableArn, expenseTable.tableArn], // Replace `walletTable` with your DynamoDB table object reference
+        actions: [
+          'dynamodb:PutItem',
+          'dynamodb:GetItem',
+          'dynamodb:UpdateItem',
+          'dynamodb:DeleteItem',
+          'dynamodb:Scan',
+          'dynamodb:Query'
+        ],
+        resources: [
+          walletTable.tableArn,
+          incomeTable.tableArn,
+          expenseTable.tableArn,
+          incomeTable.tableArn + '/index/walletIdIndex',
+          expenseTable.tableArn + '/index/walletIdIndex'
+        ], // Replace `walletTable` with your DynamoDB table object reference
       })
     );
 

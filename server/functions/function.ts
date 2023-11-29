@@ -70,6 +70,8 @@ export async function handlerRead(event: APIGatewayEvent) {
       };
     }
 
+    // TODO check that wallet pertains to user
+
     return {
       statusCode: 200,
       body: JSON.stringify(Item),
@@ -112,32 +114,6 @@ export async function handlerUpdate(event: APIGatewayEvent) {
     };
   }
 
-  const walletData = JSON.parse(event.body || '');
-
-  const timestamp = new Date().toISOString();
-  const params = {
-    TableName: process.env.WALLET_TABLE_NAME || '',
-    Key: {
-      id: walletId,
-    },
-    UpdateExpression: 'set #name = :name, #description = :description, #startingBalance = :startingBalance, #currentBalance = :currentBalance, #updatedAt = :updatedAt',
-    ExpressionAttributeNames: {
-      '#name': 'name',
-      '#description': 'description',
-      '#startingBalance': 'startingBalance',
-      '#currentBalance': 'currentBalance',
-      '#updatedAt': 'updatedAt',
-    },
-    ExpressionAttributeValues: {
-      ':name': walletData.name,
-      ':description': walletData.description,
-      ':startingBalance': walletData.startingBalance,
-      ':currentBalance': walletData.currentBalance,
-      ':updatedAt': timestamp,
-    },
-    ReturnValues: 'ALL_NEW',
-  };
-
   try {
     const existingWallet = await getWallet(walletId); // Function to check if wallet exists
 
@@ -148,14 +124,36 @@ export async function handlerUpdate(event: APIGatewayEvent) {
       };
     }
 
-    const { Attributes } = await dynamoDB.update(params).promise();
+    // TODO check that income pertains to user
 
-    if (!Attributes) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: 'Wallet not found' }),
-      };
-    }
+    const walletData = JSON.parse(event.body || '');
+
+    const timestamp = new Date().toISOString();
+    const startingBalanceDiff = -existingWallet.startingBalance + walletData.startingBalance
+    const params = {
+      TableName: process.env.WALLET_TABLE_NAME || '',
+      Key: {
+        id: walletId,
+      },
+      UpdateExpression: 'set #name = :name, #description = :description, #startingBalance = :startingBalance, #currentBalance = #currentBalance + :startingBalanceDiff, #updatedAt = :updatedAt',
+      ExpressionAttributeNames: {
+        '#name': 'name',
+        '#description': 'description',
+        '#startingBalance': 'startingBalance',
+        '#currentBalance': 'currentBalance',
+        '#updatedAt': 'updatedAt',
+      },
+      ExpressionAttributeValues: {
+        ':name': walletData.name,
+        ':description': walletData.description,
+        ':startingBalance': walletData.startingBalance,
+        ':startingBalanceDiff': startingBalanceDiff,
+        ':updatedAt': timestamp,
+      },
+      ReturnValues: 'ALL_NEW',
+    };
+
+    const { Attributes } = await dynamoDB.update(params).promise();
 
     return {
       statusCode: 200,
@@ -189,18 +187,52 @@ export async function handlerDelete(event: APIGatewayEvent) {
       };
     }
 
-    const params = {
-      TableName: process.env.WALLET_TABLE_NAME || '',
-      Key: {
-        id: walletId,
+    // TODO check that wallet pertains to user
+
+    const [incomes, expenses] = await Promise.all([
+      getAllIncomesForWallet(walletId),
+      getAllExpensesForWallet(walletId),
+    ]);
+
+    const transactionItems = [];
+
+    // Add all incomes for deletion in the transaction
+    incomes.forEach((income) => {
+      transactionItems.push({
+        Delete: {
+          TableName: process.env.INCOME_TABLE_NAME || '',
+          Key: { id: income.id },
+        },
+      });
+    });
+
+    // Add all expenses for deletion in the transaction
+    expenses.forEach((expense) => {
+      transactionItems.push({
+        Delete: {
+          TableName: process.env.EXPENSE_TABLE_NAME || '',
+          Key: { id: expense.id },
+        },
+      });
+    });
+
+    // Add the wallet deletion to the transaction
+    transactionItems.push({
+      Delete: {
+        TableName: process.env.WALLET_TABLE_NAME || '',
+        Key: { id: walletId },
       },
+    });
+
+    const transactionParams = {
+      TransactItems: transactionItems,
     };
 
-    await dynamoDB.delete(params).promise();
+    await dynamoDB.transactWrite(transactionParams).promise();
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Deleted' }),
+      body: JSON.stringify({ message: 'Wallet with incomes and expenses deleted' }),
     };
   } catch (error) {
     return {
@@ -222,6 +254,44 @@ async function getWallet(walletId: string) {
     const { Item } = await dynamoDB.get(params).promise();
     return Item;
   } catch (error) {
+    throw error;
+  }
+}
+
+async function getAllIncomesForWallet(walletId: string) {
+  const params = {
+    TableName: process.env.INCOME_TABLE_NAME || '',
+    IndexName: 'walletIdIndex', // Specify the secondary index name
+    KeyConditionExpression: 'walletId = :walletId',
+    ExpressionAttributeValues: {
+      ':walletId': walletId,
+    },
+  };
+
+  try {
+    const result = await dynamoDB.query(params).promise();
+    return result.Items || [];
+  } catch (error) {
+    console.error('Error fetching incomes:', error);
+    throw error;
+  }
+}
+
+async function getAllExpensesForWallet(walletId: string) {
+  const params = {
+    TableName: process.env.EXPENSE_TABLE_NAME || '',
+    IndexName: 'walletIdIndex', // Specify the secondary index name
+    KeyConditionExpression: 'walletId = :walletId',
+    ExpressionAttributeValues: {
+      ':walletId': walletId,
+    },
+  };
+
+  try {
+    const result = await dynamoDB.query(params).promise();
+    return result.Items || [];
+  } catch (error) {
+    console.error('Error fetching expenses:', error);
     throw error;
   }
 }
