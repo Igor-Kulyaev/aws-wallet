@@ -191,6 +191,21 @@ export class ServerStack extends Stack {
       role: lambdaExecutionRole,
     });
 
+    // Lambdas for protected and unprotected route
+    const getProtectedLambda = new NodejsFunction(this, 'GetProtectedLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/route.ts`),
+      handler: "handlerReadProtected",
+      role: lambdaExecutionRole, // Assign the execution role to the Lambda function
+    });
+
+    const getUnprotectedLambda = new NodejsFunction(this, 'GetUnprotectedLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/route.ts`),
+      handler: "handlerReadUnprotected",
+      role: lambdaExecutionRole, // Assign the execution role to the Lambda function
+    });
+
     // Attach the AWS managed policy to the execution role
     // Permissions for logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents, and cloudwatch:PutMetricData
     lambdaExecutionRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'));
@@ -237,6 +252,13 @@ export class ServerStack extends Stack {
     singleExpense.addMethod('GET', new LambdaIntegration(readExpenseLambda));
     singleExpense.addMethod('PUT', new LambdaIntegration(updateExpenseLambda));
     singleExpense.addMethod('DELETE', new LambdaIntegration(deleteExpenseLambda));
+
+    const protectedRoute = api.root.addResource('protected');
+    protectedRoute.addMethod('GET', new LambdaIntegration(getProtectedLambda));
+
+    const unprotectedRoute = api.root.addResource('unprotected');
+    unprotectedRoute.addMethod('GET', new LambdaIntegration(getUnprotectedLambda));
+
 
   }
 }
