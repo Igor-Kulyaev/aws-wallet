@@ -31,6 +31,13 @@ export class ServerStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    //Dynamodb Expense table definition
+    const expenseTable = new Table(this, 'ExpenseTable', {
+      partitionKey: { name: 'id', type: AttributeType.STRING },
+      tableName: 'ExpensesTable',
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
     // CRUD lambdas for wallet
     const createWalletLambda = new NodejsFunction(this, 'CreateWalletLambda', {
       runtime: Runtime.NODEJS_18_X,
@@ -133,6 +140,57 @@ export class ServerStack extends Stack {
       role: lambdaExecutionRole,
     });
 
+    //CRUD lambdas for expense
+    const createExpenseLambda = new NodejsFunction(this, 'CreateExpenseLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/expense.ts`),
+      handler: "handlerCreate",
+      environment: {
+        EXPENSE_TABLE_NAME: expenseTable.tableName,
+      },
+      role: lambdaExecutionRole, // Assign the execution role to the Lambda function
+    });
+
+    const readExpenseLambda = new NodejsFunction(this, 'ReadExpenseLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/expense.ts`),
+      handler: "handlerRead",
+      environment: {
+        EXPENSE_TABLE_NAME: expenseTable.tableName,
+      },
+      role: lambdaExecutionRole, // Assign the execution role to the Lambda function
+    });
+
+    const updateExpenseLambda = new NodejsFunction(this, 'UpdateExpenseLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/expense.ts`),
+      handler: "handlerUpdate",
+      environment: {
+        EXPENSE_TABLE_NAME: expenseTable.tableName,
+      },
+      role: lambdaExecutionRole, // Assign the execution role to the Lambda function
+    });
+
+    const deleteExpenseLambda = new NodejsFunction(this, 'DeleteExpenseLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/expense.ts`),
+      handler: "handlerDelete",
+      environment: {
+        EXPENSE_TABLE_NAME: expenseTable.tableName,
+      },
+      role: lambdaExecutionRole, // Assign the execution role to the Lambda function
+    });
+
+    const getAllExpensesLambda = new NodejsFunction(this, 'GetAllExpensesLambda', {
+      runtime: Runtime.NODEJS_18_X,
+      entry: path.join(__dirname, `/../functions/expense.ts`),
+      handler: 'handlerGetAll',
+      environment: {
+        EXPENSE_TABLE_NAME: expenseTable.tableName,
+      },
+      role: lambdaExecutionRole,
+    });
+
     // Attach the AWS managed policy to the execution role
     // Permissions for logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents, and cloudwatch:PutMetricData
     lambdaExecutionRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'));
@@ -140,7 +198,7 @@ export class ServerStack extends Stack {
     lambdaExecutionRole.addToPolicy(
       new PolicyStatement({
         actions: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:Scan'],
-        resources: [walletTable.tableArn, incomeTable.tableArn], // Replace `walletTable` with your DynamoDB table object reference
+        resources: [walletTable.tableArn, incomeTable.tableArn, expenseTable.tableArn], // Replace `walletTable` with your DynamoDB table object reference
       })
     );
 
@@ -170,6 +228,15 @@ export class ServerStack extends Stack {
     singleIncome.addMethod('GET', new LambdaIntegration(readIncomeLambda));
     singleIncome.addMethod('PUT', new LambdaIntegration(updateIncomeLambda));
     singleIncome.addMethod('DELETE', new LambdaIntegration(deleteIncomeLambda));
+
+    const expenses = singleWallet.addResource('expenses');
+    expenses.addMethod('GET', new LambdaIntegration(getAllExpensesLambda));
+    expenses.addMethod('POST', new LambdaIntegration(createExpenseLambda));
+
+    const singleExpense = expenses.addResource('{expenseId}');
+    singleExpense.addMethod('GET', new LambdaIntegration(readExpenseLambda));
+    singleExpense.addMethod('PUT', new LambdaIntegration(updateExpenseLambda));
+    singleExpense.addMethod('DELETE', new LambdaIntegration(deleteExpenseLambda));
 
   }
 }

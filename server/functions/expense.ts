@@ -8,14 +8,14 @@ export async function handlerCreate(event: APIGatewayEvent) {
 
   // TODO check that wallet exists and wallet pertains to user
 
-  // Parse event.body to get income data
-  const incomeData = JSON.parse(event.body || '');
+  // Parse event.body to get expense data
+  const expenseData = JSON.parse(event.body || '');
 
   // Generate timestamp for createdAt and updatedAt fields
   const timestamp = new Date().toISOString();
   const id = Math.floor(Math.random() * 1000000).toString(); // Generate a random whole number as ID
-  const incomeItem = {
-    ...incomeData,
+  const expenseItem = {
+    ...expenseData,
     id: id, // Generate a random ID (replace with UUID or your ID generation logic)
     walletId: walletId,
     createdAt: timestamp,
@@ -23,8 +23,8 @@ export async function handlerCreate(event: APIGatewayEvent) {
   };
 
   const params = {
-    TableName: process.env.INCOME_TABLE_NAME || '',
-    Item: incomeItem,
+    TableName: process.env.EXPENSE_TABLE_NAME || '',
+    Item: expenseItem,
   };
 
   try {
@@ -33,12 +33,12 @@ export async function handlerCreate(event: APIGatewayEvent) {
     // TODO add transaction
     return {
       statusCode: 200,
-      body: JSON.stringify(incomeItem),
+      body: JSON.stringify(expenseItem),
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Error creating income', error }),
+      body: JSON.stringify({ message: 'Error creating expense', error }),
     };
   }
 }
@@ -46,7 +46,7 @@ export async function handlerCreate(event: APIGatewayEvent) {
 // Implement other handlers similarly for read, update, and delete operations
 export async function handlerRead(event: APIGatewayEvent) {
   const walletId = event.pathParameters?.walletId;
-  const incomeId = event.pathParameters?.incomeId;
+  const expenseId = event.pathParameters?.expenseId;
 
   if (!walletId) {
     return {
@@ -55,29 +55,29 @@ export async function handlerRead(event: APIGatewayEvent) {
     };
   }
 
-  if (!incomeId) {
+  if (!expenseId) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ message: 'Income ID is missing in the request' }),
+      body: JSON.stringify({ message: 'Expense ID is missing in the request' }),
     };
   }
 
   const params = {
-    TableName: process.env.INCOME_TABLE_NAME || '',
+    TableName: process.env.EXPENSE_TABLE_NAME || '',
     Key: {
-      id: incomeId,
+      id: expenseId,
     },
   };
 
   try {
     const { Item } = await dynamoDB.get(params).promise();
 
-    // TODO check that income pertains to wallet and user
+    // TODO check that expense pertains to wallet and user
 
     if (!Item) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ message: 'Income not found' }),
+        body: JSON.stringify({ message: 'Expense not found' }),
       };
     }
 
@@ -88,7 +88,7 @@ export async function handlerRead(event: APIGatewayEvent) {
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Error reading income', error }),
+      body: JSON.stringify({ message: 'Error reading expense', error }),
     };
   }
 }
@@ -99,7 +99,7 @@ export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
   // TODO check that wallet exists and wallet pertains to user
 
   const params = {
-    TableName: process.env.INCOME_TABLE_NAME || '',
+    TableName: process.env.EXPENSE_TABLE_NAME || '',
     FilterExpression: '#walletId = :walletId', // Filter expression to match walletId
     ExpressionAttributeNames: {
       '#walletId': 'walletId', // Replace 'walletId' with the actual attribute name in your table
@@ -119,14 +119,14 @@ export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Error fetching incomes', error }),
+      body: JSON.stringify({ message: 'Error fetching expenses', error }),
     };
   }
 };
 
 export async function handlerUpdate(event: APIGatewayEvent) {
   const walletId = event.pathParameters?.walletId;
-  const incomeId = event.pathParameters?.incomeId;
+  const expenseId = event.pathParameters?.expenseId;
 
   if (!walletId) {
     return {
@@ -135,10 +135,10 @@ export async function handlerUpdate(event: APIGatewayEvent) {
     };
   }
 
-  if (!incomeId) {
+  if (!expenseId) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ message: 'Income ID is missing in the request' }),
+      body: JSON.stringify({ message: 'Expense ID is missing in the request' }),
     };
   }
 
@@ -146,9 +146,9 @@ export async function handlerUpdate(event: APIGatewayEvent) {
 
   const timestamp = new Date().toISOString();
   const params = {
-    TableName: process.env.INCOME_TABLE_NAME || '',
+    TableName: process.env.EXPENSE_TABLE_NAME || '',
     Key: {
-      id: incomeId,
+      id: expenseId,
     },
     UpdateExpression: 'set #name = :name, #type = :type, #amount = :amount, #updatedAt = :updatedAt',
     ExpressionAttributeNames: {
@@ -167,13 +167,13 @@ export async function handlerUpdate(event: APIGatewayEvent) {
   };
 
   try {
-    // TODO check that income exists and pertains to wallet and user
-    const existingIncome = await getIncome(incomeId); // Function to check if income exists
+    // TODO check that expense exists and pertains to wallet and user
+    const existingExpense = await getExpense(expenseId); // Function to check if expense exists
 
-    if (!existingIncome) {
+    if (!existingExpense) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ message: 'Income not found' }),
+        body: JSON.stringify({ message: 'Expense not found' }),
       };
     }
 
@@ -182,7 +182,7 @@ export async function handlerUpdate(event: APIGatewayEvent) {
     if (!Attributes) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ message: 'Income not found' }),
+        body: JSON.stringify({ message: 'Expense not found' }),
       };
     }
 
@@ -193,44 +193,44 @@ export async function handlerUpdate(event: APIGatewayEvent) {
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Error updating income', error }),
+      body: JSON.stringify({ message: 'Error updating expense', error }),
     };
   }
 }
 
 export async function handlerDelete(event: APIGatewayEvent) {
   const walletId = event.pathParameters?.walletId;
-  const incomeId = event.pathParameters?.incomeId;
+  const expenseId = event.pathParameters?.expenseId;
 
   if (!walletId) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ message: 'Wallet ID is missing in the request' }),
+      body: JSON.stringify({ message: 'Expense ID is missing in the request' }),
     };
   }
 
-  if (!incomeId) {
+  if (!expenseId) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ message: 'Income ID is missing in the request' }),
+      body: JSON.stringify({ message: 'Expense ID is missing in the request' }),
     };
   }
 
   try {
-    // TODO check that income exists and pertains to wallet and user
-    const existingIncome = await getIncome(incomeId); // Function to check if income exists
+    // TODO check that expense exists and pertains to wallet and user
+    const existingExpense = await getExpense(expenseId); // Function to check if expense exists
 
-    if (!existingIncome) {
+    if (!existingExpense) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ message: 'Income not found' }),
+        body: JSON.stringify({ message: 'Expense not found' }),
       };
     }
 
     const params = {
-      TableName: process.env.INCOME_TABLE_NAME || '',
+      TableName: process.env.EXPENSE_TABLE_NAME || '',
       Key: {
-        id: incomeId,
+        id: expenseId,
       },
     };
 
@@ -243,16 +243,16 @@ export async function handlerDelete(event: APIGatewayEvent) {
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Error deleting income', error }),
+      body: JSON.stringify({ message: 'Error deleting expense', error }),
     };
   }
 }
 
-async function getIncome(incomeId: string) {
+async function getExpense(expenseId: string) {
   const params = {
-    TableName: process.env.INCOME_TABLE_NAME || '',
+    TableName: process.env.EXPENSE_TABLE_NAME || '',
     Key: {
-      id: incomeId,
+      id: expenseId,
     },
   };
 
