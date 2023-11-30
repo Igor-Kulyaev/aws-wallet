@@ -7,10 +7,64 @@ import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs"
 import * as path from 'path';
 import {LambdaIntegration, RestApi, Cors} from "aws-cdk-lib/aws-apigateway";
 import { Role, ServicePrincipal, ManagedPolicy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import {AccountRecovery, OAuthScope, UserPool, UserPoolClient} from "aws-cdk-lib/aws-cognito";
 
 export class ServerStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+
+    const cognito = new UserPool(this, "WalletUserPool", {
+      selfSignUpEnabled: true,
+      signInAliases: {
+        email: true,
+        username: false,
+      },
+      standardAttributes: {
+        email: {
+          required: true,
+        },
+        givenName: {
+          required: true,
+          mutable: true,
+        },
+        familyName: {
+          required: true,
+          mutable: true,
+        },
+      },
+      passwordPolicy: {
+        minLength: 8,
+        requireLowercase: true,
+        requireUppercase: true,
+        requireDigits: true,
+      },
+      accountRecovery: AccountRecovery.EMAIL_ONLY,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    const userPoolClient = new UserPoolClient(this, "WalletClient", {
+      userPool: cognito,
+      authFlows: {
+        userPassword: true,
+        userSrp: true,
+      },
+      generateSecret: false,
+      oAuth: {
+        flows: {
+          authorizationCodeGrant: true,
+        },
+        scopes: [OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE],
+        callbackUrls: ["http://localhost:3000"],
+      },
+    });
+
+    new CfnOutput(this, "UserPoolId", {
+      value: cognito.userPoolId || "",
+    });
+
+    new CfnOutput(this, "UserPoolClientId", {
+      value: userPoolClient.userPoolClientId || "",
+    });
 
     // Create an execution role for the Lambda functions
     const lambdaExecutionRole = new Role(this, 'LambdaExecutionRole', {
