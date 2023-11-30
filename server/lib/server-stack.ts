@@ -5,7 +5,7 @@ import { AttributeType, Table } from 'aws-cdk-lib/aws-dynamodb';
 import {Runtime, FunctionUrlAuthType } from "aws-cdk-lib/aws-lambda";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs"
 import * as path from 'path';
-import {LambdaIntegration, RestApi, Cors} from "aws-cdk-lib/aws-apigateway";
+import {LambdaIntegration, RestApi, Cors, CfnAuthorizer, AuthorizationType} from "aws-cdk-lib/aws-apigateway";
 import { Role, ServicePrincipal, ManagedPolicy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import {AccountRecovery, OAuthScope, UserPool, UserPoolClient} from "aws-cdk-lib/aws-cognito";
 
@@ -314,10 +314,25 @@ export class ServerStack extends Stack {
       },
     });
 
+    // Create Cognito authorizer
+    const authorizer = new CfnAuthorizer(this, 'CognitoAuthorizer', {
+      restApiId: api.restApiId,
+      name: 'CognitoAuthorizer',
+      type: 'COGNITO_USER_POOLS',
+      identitySource: 'method.request.header.Authorization',
+      providerArns: [cognito.userPoolArn],
+    });
+
     // API methods for wallets
     const wallets = api.root.addResource('wallets');
-    wallets.addMethod('GET', new LambdaIntegration(getAllWalletsLambda));
-    wallets.addMethod('POST', new LambdaIntegration(createWalletLambda));
+    wallets.addMethod('GET', new LambdaIntegration(getAllWalletsLambda),{
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
+    wallets.addMethod('POST', new LambdaIntegration(createWalletLambda),{
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
 
     const singleWallet = wallets.addResource('{walletId}');
     singleWallet.addMethod('GET', new LambdaIntegration(readWalletLambda));
@@ -343,7 +358,10 @@ export class ServerStack extends Stack {
     singleExpense.addMethod('DELETE', new LambdaIntegration(deleteExpenseLambda));
 
     const protectedRoute = api.root.addResource('protected');
-    protectedRoute.addMethod('GET', new LambdaIntegration(getProtectedLambda));
+    protectedRoute.addMethod('GET', new LambdaIntegration(getProtectedLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
 
     const unprotectedRoute = api.root.addResource('unprotected');
     unprotectedRoute.addMethod('GET', new LambdaIntegration(getUnprotectedLambda));
