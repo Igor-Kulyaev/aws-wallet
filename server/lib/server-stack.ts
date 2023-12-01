@@ -7,7 +7,14 @@ import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs"
 import * as path from 'path';
 import {LambdaIntegration, RestApi, Cors, CfnAuthorizer, AuthorizationType} from "aws-cdk-lib/aws-apigateway";
 import { Role, ServicePrincipal, ManagedPolicy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import {AccountRecovery, OAuthScope, UserPool, UserPoolClient} from "aws-cdk-lib/aws-cognito";
+import {
+  AccountRecovery,
+  OAuthScope,
+  StringAttribute,
+  UserPool,
+  UserPoolClient,
+  UserPoolOperation
+} from "aws-cdk-lib/aws-cognito";
 
 export class ServerStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -31,6 +38,13 @@ export class ServerStack extends Stack {
           required: true,
           mutable: true,
         },
+        birthdate: {
+          required: true,
+          mutable: true,
+        }
+      },
+      customAttributes: {
+        role: new StringAttribute({mutable: true}),
       },
       passwordPolicy: {
         minLength: 8,
@@ -282,6 +296,39 @@ export class ServerStack extends Stack {
       role: lambdaExecutionRole, // Assign the execution role to the Lambda function
     });
 
+    // lambda for pre signup
+    // const preSignUpFn = new NodejsFunction(this, 'PreSignUpFunction', {
+    //   runtime: Runtime.NODEJS_18_X,
+    //   entry: path.join(__dirname, `/../functions/cognito.ts`),
+    //   handler: "handlerSignup",
+    //   role: lambdaExecutionRole,
+    // });
+
+    // Create a new role for the Lambda function updating user attributes
+    // const updateUserAttributesRole = new Role(this, 'UpdateUserAttributesRole', {
+    //   assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+    // });
+
+    // lambda for post sign up
+    // const updateUserAttributesLambda = new NodejsFunction(this, 'UpdateUserAttributesLambda', {
+    //   runtime: Runtime.NODEJS_18_X,
+    //   entry: path.join(__dirname, `/../functions/cognito.ts`),
+    //   handler: 'handlerPostSignup', // Implement your handler function
+    //   role: updateUserAttributesRole,
+    // });
+
+    // Grant necessary permissions to the role
+    // updateUserAttributesRole.addToPolicy(
+    //   new PolicyStatement({
+    //     actions: ['cognito-idp:AdminUpdateUserAttributes'],
+    //     resources: [cognito.userPoolArn], // Replace with your Cognito User Pool ARN
+    //   })
+    // );
+
+    // cognito.addTrigger(UserPoolOperation.PRE_SIGN_UP, preSignUpFn);
+    // Trigger Lambda after user creation
+    // cognito.addTrigger(UserPoolOperation.POST_CONFIRMATION, updateUserAttributesLambda);
+
     // Attach the AWS managed policy to the execution role
     // Permissions for logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents, and cloudwatch:PutMetricData
     lambdaExecutionRole.addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'));
@@ -294,14 +341,14 @@ export class ServerStack extends Stack {
           'dynamodb:UpdateItem',
           'dynamodb:DeleteItem',
           'dynamodb:Scan',
-          'dynamodb:Query'
+          'dynamodb:Query',
         ],
         resources: [
           walletTable.tableArn,
           incomeTable.tableArn,
           expenseTable.tableArn,
           incomeTable.tableArn + '/index/walletIdIndex',
-          expenseTable.tableArn + '/index/walletIdIndex'
+          expenseTable.tableArn + '/index/walletIdIndex',
         ], // Replace `walletTable` with your DynamoDB table object reference
       })
     );
