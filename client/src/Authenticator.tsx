@@ -4,7 +4,7 @@ import "@aws-amplify/ui-react/styles.css";
 // @ts-ignore
 export const Authenticator = ({children}) => {
  return <AmplifyAuthenticator
-  signUpAttributes={["given_name", "family_name"]}
+  signUpAttributes={["given_name", "family_name", "birthdate"]}
   formFields={{
    signIn: {
     username: {
@@ -24,6 +24,10 @@ export const Authenticator = ({children}) => {
     family_name: {
      label: "Last name",
      placeholder: "Enter your last name",
+    },
+    birthdate: {
+     label: "Birthdate",
+     placeholder: "Enter your birthdate",
     },
    },
   }}
