@@ -378,27 +378,66 @@ export class ServerStack extends Stack {
     });
 
     const singleWallet = wallets.addResource('{walletId}');
-    singleWallet.addMethod('GET', new LambdaIntegration(readWalletLambda));
-    singleWallet.addMethod('PUT', new LambdaIntegration(updateWalletLambda));
-    singleWallet.addMethod('DELETE', new LambdaIntegration(deleteWalletLambda));
+    singleWallet.addMethod('GET', new LambdaIntegration(readWalletLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
+    singleWallet.addMethod('PUT', new LambdaIntegration(updateWalletLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
+    singleWallet.addMethod('DELETE', new LambdaIntegration(deleteWalletLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
 
     const incomes = singleWallet.addResource('incomes');
-    incomes.addMethod('GET', new LambdaIntegration(getAllIncomesLambda));
-    incomes.addMethod('POST', new LambdaIntegration(createIncomeLambda));
+    incomes.addMethod('GET', new LambdaIntegration(getAllIncomesLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
+    incomes.addMethod('POST', new LambdaIntegration(createIncomeLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
 
     const singleIncome = incomes.addResource('{incomeId}');
-    singleIncome.addMethod('GET', new LambdaIntegration(readIncomeLambda));
-    singleIncome.addMethod('PUT', new LambdaIntegration(updateIncomeLambda));
-    singleIncome.addMethod('DELETE', new LambdaIntegration(deleteIncomeLambda));
+    singleIncome.addMethod('GET', new LambdaIntegration(readIncomeLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
+    singleIncome.addMethod('PUT', new LambdaIntegration(updateIncomeLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
+    singleIncome.addMethod('DELETE', new LambdaIntegration(deleteIncomeLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
 
     const expenses = singleWallet.addResource('expenses');
-    expenses.addMethod('GET', new LambdaIntegration(getAllExpensesLambda));
-    expenses.addMethod('POST', new LambdaIntegration(createExpenseLambda));
+    expenses.addMethod('GET', new LambdaIntegration(getAllExpensesLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
+    expenses.addMethod('POST', new LambdaIntegration(createExpenseLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
 
     const singleExpense = expenses.addResource('{expenseId}');
-    singleExpense.addMethod('GET', new LambdaIntegration(readExpenseLambda));
-    singleExpense.addMethod('PUT', new LambdaIntegration(updateExpenseLambda));
-    singleExpense.addMethod('DELETE', new LambdaIntegration(deleteExpenseLambda));
+    singleExpense.addMethod('GET', new LambdaIntegration(readExpenseLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
+    singleExpense.addMethod('PUT', new LambdaIntegration(updateExpenseLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
+    singleExpense.addMethod('DELETE', new LambdaIntegration(deleteExpenseLambda), {
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: { authorizerId: authorizer.ref },
+    });
 
     const protectedRoute = api.root.addResource('protected');
     protectedRoute.addMethod('GET', new LambdaIntegration(getProtectedLambda), {
