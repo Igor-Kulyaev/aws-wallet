@@ -1,13 +1,3 @@
-interface IWallet {
-  name: string;
-  description: string;
-  startingBalance: number;
-  currentBalance: number;
-  id?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
 export interface IBaseWallet {
   name: string;
   description: string;

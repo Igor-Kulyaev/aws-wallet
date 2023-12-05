@@ -1,13 +1,3 @@
-interface IExpense {
-  name: string;
-  type: string;
-  amount: number;
-  id?: string;
-  walletId?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
 export interface IBaseExpense {
   name: string;
   type: string;
