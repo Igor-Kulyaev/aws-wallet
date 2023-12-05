@@ -1,23 +1,16 @@
 import { Handler, APIGatewayEvent } from 'aws-lambda';
 import { DynamoDB } from 'aws-sdk';
 import {decodeToken} from "../utils/utils";
-
-const dynamoDB = new DynamoDB.DocumentClient();
+import {createIncome, deleteIncome, getIncome, getIncomes, updateIncome} from "../services/incomeService";
+import {getWallet} from "../services/walletService";
 
 export async function handlerCreate(event: APIGatewayEvent) {
   const decodedToken = decodeToken(event);
-  const userId = decodedToken.sub; // Example: extracting the user ID
-
+  const userId = decodedToken.sub;
   const walletId = event.pathParameters?.walletId;
 
   try {
-    const walletParams = {
-      TableName: process.env.WALLET_TABLE_NAME || '',
-      Key: {
-        id: walletId,
-      },
-    };
-    const { Item: wallet } = await dynamoDB.get(walletParams).promise();
+    const wallet = await getWallet(walletId as string);
 
     if (!wallet) {
       return {
@@ -33,59 +26,13 @@ export async function handlerCreate(event: APIGatewayEvent) {
       };
     }
 
-    // Parse event.body to get income data
     const incomeData = JSON.parse(event.body || '');
 
-    // Generate timestamp for createdAt and updatedAt fields
-    const incomeTimestamp = new Date().toISOString();
-    const id = Math.floor(Math.random() * 1000000).toString(); // Generate a random whole number as ID
-    const incomeItem = {
-      ...incomeData,
-      id: id, // Generate a random ID (replace with UUID or your ID generation logic)
-      walletId: walletId,
-      userId: userId,
-      createdAt: incomeTimestamp,
-      updatedAt: incomeTimestamp,
-    };
-
-    const incomeParams = {
-      TableName: process.env.INCOME_TABLE_NAME || '',
-      Item: incomeItem,
-    };
-
-    const updateWalletParams = {
-      TableName: process.env.WALLET_TABLE_NAME || '',
-      Key: {
-        id: walletId,
-      },
-      UpdateExpression: 'set #currentBalance = #currentBalance + :amount, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#currentBalance': 'currentBalance',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':amount': incomeData.amount,
-        ':updatedAt': incomeTimestamp,
-      },
-      ReturnValues: 'ALL_NEW',
-    };
-
-    const transactionParams = {
-      TransactItems: [
-        {
-          Put: incomeParams,
-        },
-        {
-          Update: updateWalletParams,
-        },
-      ],
-    };
-
-    await dynamoDB.transactWrite(transactionParams).promise();
+    const createdIncome = await createIncome(incomeData, walletId as string, userId);
 
     return {
       statusCode: 200,
-      body: JSON.stringify(incomeItem),
+      body: JSON.stringify(createdIncome),
     };
   } catch (error) {
     return {
@@ -97,8 +44,7 @@ export async function handlerCreate(event: APIGatewayEvent) {
 
 export async function handlerRead(event: APIGatewayEvent) {
   const decodedToken = decodeToken(event);
-  const userId = decodedToken.sub; // Example: extracting the user ID
-
+  const userId = decodedToken.sub;
   const walletId = event.pathParameters?.walletId;
   const incomeId = event.pathParameters?.incomeId;
 
@@ -116,31 +62,24 @@ export async function handlerRead(event: APIGatewayEvent) {
     };
   }
 
-  const params = {
-    TableName: process.env.INCOME_TABLE_NAME || '',
-    Key: {
-      id: incomeId,
-    },
-  };
-
   try {
-    const { Item } = await dynamoDB.get(params).promise();
+    const income = await getIncome(incomeId);
 
-    if (!Item) {
+    if (!income) {
       return {
         statusCode: 404,
         body: JSON.stringify({ message: 'Income not found' }),
       };
     }
 
-    if (Item.walletId !== walletId) {
+    if (income.walletId !== walletId) {
       return {
         statusCode: 401,
         body: JSON.stringify({ message: 'Income does not pertain to requested wallet' }),
       };
     }
 
-    if (Item.userId !== userId) {
+    if (income.userId !== userId) {
       return {
         statusCode: 401,
         body: JSON.stringify({ message: 'Unauthorized' }),
@@ -149,7 +88,7 @@ export async function handlerRead(event: APIGatewayEvent) {
 
     return {
       statusCode: 200,
-      body: JSON.stringify(Item),
+      body: JSON.stringify(income),
     };
   } catch (error) {
     return {
@@ -161,8 +100,7 @@ export async function handlerRead(event: APIGatewayEvent) {
 
 export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
   const decodedToken = decodeToken(event);
-  const userId = decodedToken.sub; // Example: extracting the user ID
-
+  const userId = decodedToken.sub;
   const walletId = event.pathParameters?.walletId;
 
   if (!walletId) {
@@ -173,13 +111,7 @@ export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
   }
 
   try {
-    const walletParams = {
-      TableName: process.env.WALLET_TABLE_NAME || '',
-      Key: {
-        id: walletId,
-      },
-    };
-    const { Item: wallet } = await dynamoDB.get(walletParams).promise();
+    const wallet = await getWallet(walletId as string);
 
     if (!wallet) {
       return {
@@ -195,22 +127,11 @@ export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
       };
     }
 
-    const params = {
-      TableName: process.env.INCOME_TABLE_NAME || '',
-      FilterExpression: '#walletId = :walletId', // Filter expression to match walletId
-      ExpressionAttributeNames: {
-        '#walletId': 'walletId', // Replace 'walletId' with the actual attribute name in your table
-      },
-      ExpressionAttributeValues: {
-        ':walletId': walletId, // Value to match with the provided walletId from the URL path
-      },
-    };
-
-    const { Items } = await dynamoDB.scan(params).promise();
+    const incomes = await getIncomes(walletId);
 
     return {
       statusCode: 200,
-      body: JSON.stringify(Items),
+      body: JSON.stringify(incomes),
     };
   } catch (error) {
     return {
@@ -222,8 +143,7 @@ export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
 
 export async function handlerUpdate(event: APIGatewayEvent) {
   const decodedToken = decodeToken(event);
-  const userId = decodedToken.sub; // Example: extracting the user ID
-
+  const userId = decodedToken.sub;
   const walletId = event.pathParameters?.walletId;
   const incomeId = event.pathParameters?.incomeId;
 
@@ -242,7 +162,7 @@ export async function handlerUpdate(event: APIGatewayEvent) {
   }
 
   try {
-    const existingIncome = await getIncome(incomeId); // Function to check if income exists
+    const existingIncome = await getIncome(incomeId);
 
     if (!existingIncome) {
       return {
@@ -267,70 +187,11 @@ export async function handlerUpdate(event: APIGatewayEvent) {
 
     const incomeData = JSON.parse(event.body || '');
 
-    const timestamp = new Date().toISOString();
-    const incomeParams = {
-      TableName: process.env.INCOME_TABLE_NAME || '',
-      Key: {
-        id: incomeId,
-      },
-      UpdateExpression: 'set #name = :name, #type = :type, #amount = :amount, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#name': 'name',
-        '#type': 'type',
-        '#amount': 'amount',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':name': incomeData.name,
-        ':type': incomeData.type,
-        ':amount': incomeData.amount,
-        ':updatedAt': timestamp,
-      },
-      ReturnValues: 'ALL_NEW',
-    };
-
-    // get difference between previous amount and new amount for updating balance
-    const newAmount = -existingIncome.amount + incomeData.amount;
-
-    const updateWalletParams = {
-      TableName: process.env.WALLET_TABLE_NAME || '',
-      Key: {
-        id: walletId,
-      },
-      UpdateExpression: 'set #currentBalance = #currentBalance + :newAmount, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#currentBalance': 'currentBalance',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':newAmount': newAmount,
-        ':updatedAt': timestamp,
-      },
-      ReturnValues: 'ALL_NEW',
-    };
-
-    const transactionParams = {
-      TransactItems: [
-        {
-          Update: incomeParams,
-        },
-        {
-          Update: updateWalletParams,
-        },
-      ],
-    };
-
-    await dynamoDB.transactWrite(transactionParams).promise();
+    const updatedIncome = await updateIncome(incomeId, walletId, incomeData, existingIncome);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        ...existingIncome,
-        name: incomeData.name,
-        type: incomeData.type,
-        amount: incomeData.amount,
-        updatedAt: timestamp
-      }),
+      body: JSON.stringify(updatedIncome),
     };
   } catch (error) {
     return {
@@ -342,8 +203,7 @@ export async function handlerUpdate(event: APIGatewayEvent) {
 
 export async function handlerDelete(event: APIGatewayEvent) {
   const decodedToken = decodeToken(event);
-  const userId = decodedToken.sub; // Example: extracting the user ID
-
+  const userId = decodedToken.sub;
   const walletId = event.pathParameters?.walletId;
   const incomeId = event.pathParameters?.incomeId;
 
@@ -362,7 +222,7 @@ export async function handlerDelete(event: APIGatewayEvent) {
   }
 
   try {
-    const existingIncome = await getIncome(incomeId); // Function to check if income exists
+    const existingIncome = await getIncome(incomeId);
 
     if (!existingIncome) {
       return {
@@ -385,46 +245,7 @@ export async function handlerDelete(event: APIGatewayEvent) {
       };
     }
 
-    const incomeParams = {
-      TableName: process.env.INCOME_TABLE_NAME || '',
-      Key: {
-        id: incomeId,
-      },
-    };
-
-    const timestamp = new Date().toISOString();
-
-    // await dynamoDB.delete(incomeParams).promise();
-
-    const updateWalletParams = {
-      TableName: process.env.WALLET_TABLE_NAME || '',
-      Key: {
-        id: walletId,
-      },
-      UpdateExpression: 'set #currentBalance = #currentBalance - :amount, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#currentBalance': 'currentBalance',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':amount': existingIncome.amount,
-        ':updatedAt': timestamp,
-      },
-      ReturnValues: 'ALL_NEW',
-    };
-
-    const transactionParams = {
-      TransactItems: [
-        {
-          Delete: incomeParams,
-        },
-        {
-          Update: updateWalletParams,
-        },
-      ],
-    };
-
-    await dynamoDB.transactWrite(transactionParams).promise();
+    await deleteIncome(incomeId, walletId, existingIncome);
 
     return {
       statusCode: 200,
@@ -435,21 +256,5 @@ export async function handlerDelete(event: APIGatewayEvent) {
       statusCode: 500,
       body: JSON.stringify({ message: 'Error deleting income', error }),
     };
-  }
-}
-
-async function getIncome(incomeId: string) {
-  const params = {
-    TableName: process.env.INCOME_TABLE_NAME || '',
-    Key: {
-      id: incomeId,
-    },
-  };
-
-  try {
-    const { Item } = await dynamoDB.get(params).promise();
-    return Item;
-  } catch (error) {
-    throw error;
   }
 }
