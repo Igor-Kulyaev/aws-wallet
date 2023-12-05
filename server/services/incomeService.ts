@@ -19,7 +19,7 @@ export async function getIncome(incomeId: string) {
   }
 }
 
-export const createIncome = async (incomeData: IBaseIncome, walletId: string, userId: string) => {
+export const createIncome = async (walletId: string, userId: string, incomeData: IBaseIncome) => {
   const incomeTimestamp = new Date().toISOString();
   const id = Math.floor(Math.random() * 1000000).toString();
   const incomeItem = {

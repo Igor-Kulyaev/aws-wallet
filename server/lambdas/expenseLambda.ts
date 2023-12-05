@@ -9,7 +9,7 @@ export async function handlerCreate(event: APIGatewayEvent) {
   const walletId = event.pathParameters?.walletId;
 
   try {
-    const wallet = await getWallet(walletId as string);
+    const wallet = await getWallet(walletId!);
 
     if (!wallet) {
       return {

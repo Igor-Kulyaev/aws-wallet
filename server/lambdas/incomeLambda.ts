@@ -1,5 +1,4 @@
 import { Handler, APIGatewayEvent } from 'aws-lambda';
-import { DynamoDB } from 'aws-sdk';
 import {decodeToken} from "../utils/utils";
 import {createIncome, deleteIncome, getIncome, getIncomes, updateIncome} from "../services/incomeService";
 import {getWallet} from "../services/walletService";
@@ -10,7 +9,7 @@ export async function handlerCreate(event: APIGatewayEvent) {
   const walletId = event.pathParameters?.walletId;
 
   try {
-    const wallet = await getWallet(walletId as string);
+    const wallet = await getWallet(walletId!);
 
     if (!wallet) {
       return {
@@ -28,7 +27,7 @@ export async function handlerCreate(event: APIGatewayEvent) {
 
     const incomeData = JSON.parse(event.body || '');
 
-    const createdIncome = await createIncome(incomeData, walletId as string, userId);
+    const createdIncome = await createIncome(walletId!, userId, incomeData);
 
     return {
       statusCode: 200,
@@ -111,7 +110,7 @@ export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
   }
 
   try {
-    const wallet = await getWallet(walletId as string);
+    const wallet = await getWallet(walletId);
 
     if (!wallet) {
       return {
