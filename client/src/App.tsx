@@ -1,21 +1,46 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {Authenticator} from "./Authenticator";
 import {Button} from "@mui/material";
 import {useAuthenticator} from "@aws-amplify/ui-react";
+import {decodeJwtToken, getIdToken} from "./utils/utils";
+
+export interface IUserInfo {
+  email: string;
+  given_name: string;
+  family_name: string;
+  sub: string;
+}
 
 
 function App() {
   const {user, signOut} = useAuthenticator((context) => [context.user]);
-  const route = useAuthenticator((context) => [context.route]);
-  const authStatus = useAuthenticator((context) => [context.authStatus]);
-  const error = useAuthenticator((context ) => {
-    console.log('context', context);
-    return [context.challengeName];
-  });
+  const [idToken, setIdToken] = useState('');
+  const [userInfo, setUserInfo] = useState<null | IUserInfo>(null);
+
+  useEffect(() => {
+    if (user) {
+      const foundIdToken = getIdToken(user.userId);
+
+      foundIdToken && setIdToken(foundIdToken);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (idToken) {
+      const userPayload = decodeJwtToken(idToken);
+
+      userPayload && setUserInfo({
+        email: userPayload.email,
+        given_name: userPayload.given_name,
+        family_name: userPayload.family_name,
+        sub: userPayload.sub,
+      })
+    }
+  }, [idToken]);
+
   console.log('user', user);
-  console.log('route', route);
-  console.log('authStatus', authStatus);
-  console.log('error', error);
+  console.log('decoded token', decodeJwtToken(idToken));
+  console.log('userInfo', userInfo);
 
   return (
     <Authenticator>
