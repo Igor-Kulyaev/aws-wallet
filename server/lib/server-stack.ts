@@ -127,7 +127,7 @@ export class ServerStack extends Stack {
     // CRUD lambdas for wallet
     const createWalletLambda = new NodejsFunction(this, 'CreateWalletLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/function.ts`),
+      entry: path.join(__dirname, `/../lambdas/walletLambda.ts`),
       handler: "handlerCreate",
       environment: {
         WALLET_TABLE_NAME: walletTable.tableName,
@@ -137,7 +137,7 @@ export class ServerStack extends Stack {
 
     const readWalletLambda = new NodejsFunction(this, 'ReadWalletLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/function.ts`),
+      entry: path.join(__dirname, `/../lambdas/walletLambda.ts`),
       handler: "handlerRead",
       environment: {
         WALLET_TABLE_NAME: walletTable.tableName,
@@ -147,7 +147,7 @@ export class ServerStack extends Stack {
 
     const updateWalletLambda = new NodejsFunction(this, 'UpdateWalletLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/function.ts`),
+      entry: path.join(__dirname, `/../lambdas/walletLambda.ts`),
       handler: "handlerUpdate",
       environment: {
         WALLET_TABLE_NAME: walletTable.tableName,
@@ -157,7 +157,7 @@ export class ServerStack extends Stack {
 
     const deleteWalletLambda = new NodejsFunction(this, 'DeleteWalletLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/function.ts`),
+      entry: path.join(__dirname, `/../lambdas/walletLambda.ts`),
       handler: "handlerDelete",
       environment: {
         WALLET_TABLE_NAME: walletTable.tableName,
@@ -169,7 +169,7 @@ export class ServerStack extends Stack {
 
     const getAllWalletsLambda = new NodejsFunction(this, 'GetAllWalletsLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/function.ts`),
+      entry: path.join(__dirname, `/../lambdas/walletLambda.ts`),
       handler: 'handlerGetAll',
       environment: {
         WALLET_TABLE_NAME: walletTable.tableName,
@@ -180,7 +180,7 @@ export class ServerStack extends Stack {
     //CRUD lambdas for income
     const createIncomeLambda = new NodejsFunction(this, 'CreateIncomeLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/income.ts`),
+      entry: path.join(__dirname, `/../lambdas/incomeLambda.ts`),
       handler: "handlerCreate",
       environment: {
         INCOME_TABLE_NAME: incomeTable.tableName,
@@ -191,7 +191,7 @@ export class ServerStack extends Stack {
 
     const readIncomeLambda = new NodejsFunction(this, 'ReadIncomeLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/income.ts`),
+      entry: path.join(__dirname, `/../lambdas/incomeLambda.ts`),
       handler: "handlerRead",
       environment: {
         INCOME_TABLE_NAME: incomeTable.tableName,
@@ -202,7 +202,7 @@ export class ServerStack extends Stack {
 
     const updateIncomeLambda = new NodejsFunction(this, 'UpdateIncomeLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/income.ts`),
+      entry: path.join(__dirname, `/../lambdas/incomeLambda.ts`),
       handler: "handlerUpdate",
       environment: {
         INCOME_TABLE_NAME: incomeTable.tableName,
@@ -213,7 +213,7 @@ export class ServerStack extends Stack {
 
     const deleteIncomeLambda = new NodejsFunction(this, 'DeleteIncomeLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/income.ts`),
+      entry: path.join(__dirname, `/../lambdas/incomeLambda.ts`),
       handler: "handlerDelete",
       environment: {
         INCOME_TABLE_NAME: incomeTable.tableName,
@@ -224,7 +224,7 @@ export class ServerStack extends Stack {
 
     const getAllIncomesLambda = new NodejsFunction(this, 'GetAllIncomesLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/income.ts`),
+      entry: path.join(__dirname, `/../lambdas/incomeLambda.ts`),
       handler: 'handlerGetAll',
       environment: {
         INCOME_TABLE_NAME: incomeTable.tableName,
@@ -236,7 +236,7 @@ export class ServerStack extends Stack {
     //CRUD lambdas for expense
     const createExpenseLambda = new NodejsFunction(this, 'CreateExpenseLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/expense.ts`),
+      entry: path.join(__dirname, `/../lambdas/expenseLambda.ts`),
       handler: "handlerCreate",
       environment: {
         EXPENSE_TABLE_NAME: expenseTable.tableName,
@@ -247,7 +247,7 @@ export class ServerStack extends Stack {
 
     const readExpenseLambda = new NodejsFunction(this, 'ReadExpenseLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/expense.ts`),
+      entry: path.join(__dirname, `/../lambdas/expenseLambda.ts`),
       handler: "handlerRead",
       environment: {
         EXPENSE_TABLE_NAME: expenseTable.tableName,
@@ -258,7 +258,7 @@ export class ServerStack extends Stack {
 
     const updateExpenseLambda = new NodejsFunction(this, 'UpdateExpenseLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/expense.ts`),
+      entry: path.join(__dirname, `/../lambdas/expenseLambda.ts`),
       handler: "handlerUpdate",
       environment: {
         EXPENSE_TABLE_NAME: expenseTable.tableName,
@@ -269,7 +269,7 @@ export class ServerStack extends Stack {
 
     const deleteExpenseLambda = new NodejsFunction(this, 'DeleteExpenseLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/expense.ts`),
+      entry: path.join(__dirname, `/../lambdas/expenseLambda.ts`),
       handler: "handlerDelete",
       environment: {
         EXPENSE_TABLE_NAME: expenseTable.tableName,
@@ -280,7 +280,7 @@ export class ServerStack extends Stack {
 
     const getAllExpensesLambda = new NodejsFunction(this, 'GetAllExpensesLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/expense.ts`),
+      entry: path.join(__dirname, `/../lambdas/expenseLambda.ts`),
       handler: 'handlerGetAll',
       environment: {
         EXPENSE_TABLE_NAME: expenseTable.tableName,
@@ -292,14 +292,14 @@ export class ServerStack extends Stack {
     // Lambdas for protected and unprotected route
     const getProtectedLambda = new NodejsFunction(this, 'GetProtectedLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/route.ts`),
+      entry: path.join(__dirname, `/../lambdas/routeLambda.ts`),
       handler: "handlerReadProtected",
       role: lambdaExecutionRole, // Assign the execution role to the Lambda function
     });
 
     const getUnprotectedLambda = new NodejsFunction(this, 'GetUnprotectedLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/route.ts`),
+      entry: path.join(__dirname, `/../lambdas/routeLambda.ts`),
       handler: "handlerReadUnprotected",
       role: lambdaExecutionRole, // Assign the execution role to the Lambda function
     });
@@ -307,7 +307,7 @@ export class ServerStack extends Stack {
     // lambda for post sign up
     const updateUserAttributesLambda = new NodejsFunction(this, 'UpdateUserAttributesLambda', {
       runtime: Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, `/../functions/cognito.ts`),
+      entry: path.join(__dirname, `/../lambdas/cognitoLambda.ts`),
       handler: 'handlerPostSignup', // Implement your handler function
       role: updateUserAttributesRole,
     });

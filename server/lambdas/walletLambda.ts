@@ -1,27 +1,21 @@
 import { Handler, APIGatewayEvent } from 'aws-lambda';
-
 import { DynamoDB } from 'aws-sdk';
 import {decodeToken} from "../utils/utils";
-
-// const dynamo = new DynamoDB.DocumentClient();
-// const TABLE_NAME : string = process.env.HELLO_TABLE_NAME!;
+import {IBaseWallet, IWalletDB} from "../models/wallet";
 
 const dynamoDB = new DynamoDB.DocumentClient();
 
 export async function handlerCreate(event: APIGatewayEvent) {
   const decodedToken = decodeToken(event);
-  const userId = decodedToken.sub; // Example: extracting the user ID
-  // Implement logic to create a wallet in DynamoDB based on event.body
-  // Parse event.body to get wallet data
+  const userId = decodedToken.sub;
   const walletData = JSON.parse(event.body || '');
 
-  // Generate timestamp for createdAt and updatedAt fields
   const timestamp = new Date().toISOString();
-  const id = Math.floor(Math.random() * 1000000).toString(); // Generate a random whole number as ID
+  const id = Math.floor(Math.random() * 1000000).toString();
   const walletItem = {
     ...walletData,
     currentBalance: walletData.startingBalance,
-    id: id, // Generate a random ID (replace with UUID or your ID generation logic)
+    id: id,
     userId: userId,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -46,7 +40,30 @@ export async function handlerCreate(event: APIGatewayEvent) {
   }
 }
 
-// Implement other handlers similarly for read, update, and delete operations
+export const createWallet = async (walletData: IBaseWallet, userId: string) => {
+  const timestamp = new Date().toISOString();
+  const id = Math.floor(Math.random() * 1000000).toString();
+  const walletItem: IWalletDB = {
+    ...walletData,
+    currentBalance: walletData.startingBalance,
+    id: id,
+    userId: userId,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+
+  const params = {
+    TableName: process.env.WALLET_TABLE_NAME || '',
+    Item: walletItem,
+  };
+
+  try {
+    await dynamoDB.put(params).promise();
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function handlerRead(event: APIGatewayEvent) {
   const decodedToken = decodeToken(event);
   const userId = decodedToken.sub; // Example: extracting the user ID
