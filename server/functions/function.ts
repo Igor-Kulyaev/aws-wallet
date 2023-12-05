@@ -1,6 +1,7 @@
 import { Handler, APIGatewayEvent } from 'aws-lambda';
 
 import { DynamoDB } from 'aws-sdk';
+import {decodeToken} from "../utils/utils";
 
 // const dynamo = new DynamoDB.DocumentClient();
 // const TABLE_NAME : string = process.env.HELLO_TABLE_NAME!;
@@ -8,6 +9,8 @@ import { DynamoDB } from 'aws-sdk';
 const dynamoDB = new DynamoDB.DocumentClient();
 
 export async function handlerCreate(event: APIGatewayEvent) {
+  const decodedToken = decodeToken(event);
+  const userId = decodedToken.sub; // Example: extracting the user ID
   // Implement logic to create a wallet in DynamoDB based on event.body
   // Parse event.body to get wallet data
   const walletData = JSON.parse(event.body || '');
@@ -19,6 +22,7 @@ export async function handlerCreate(event: APIGatewayEvent) {
     ...walletData,
     currentBalance: walletData.startingBalance,
     id: id, // Generate a random ID (replace with UUID or your ID generation logic)
+    userId: userId,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -44,6 +48,9 @@ export async function handlerCreate(event: APIGatewayEvent) {
 
 // Implement other handlers similarly for read, update, and delete operations
 export async function handlerRead(event: APIGatewayEvent) {
+  const decodedToken = decodeToken(event);
+  const userId = decodedToken.sub; // Example: extracting the user ID
+
   const walletId = event.pathParameters?.walletId;
 
   if (!walletId) {
@@ -70,7 +77,12 @@ export async function handlerRead(event: APIGatewayEvent) {
       };
     }
 
-    // TODO check that wallet pertains to user
+    if (Item.userId !== userId) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      };
+    }
 
     return {
       statusCode: 200,
@@ -84,13 +96,23 @@ export async function handlerRead(event: APIGatewayEvent) {
   }
 }
 
-export const handlerGetAll: Handler = async () => {
-  const params = {
-    TableName: process.env.WALLET_TABLE_NAME || '',
-  };
+export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
+  const decodedToken = decodeToken(event);
+  const userId = decodedToken.sub; // Example: extracting the user ID
 
   try {
-    const { Items } = await dynamoDB.scan(params).promise();
+    const walletsParams = {
+      TableName: process.env.WALLET_TABLE_NAME || '',
+      FilterExpression: '#userId = :userId',
+      ExpressionAttributeNames: {
+        '#userId': 'userId',
+      },
+      ExpressionAttributeValues: {
+        ':userId': userId,
+      },
+    };
+
+    const { Items } = await dynamoDB.scan(walletsParams).promise();
 
     return {
       statusCode: 200,
@@ -105,6 +127,9 @@ export const handlerGetAll: Handler = async () => {
 };
 
 export async function handlerUpdate(event: APIGatewayEvent) {
+  const decodedToken = decodeToken(event);
+  const userId = decodedToken.sub; // Example: extracting the user ID
+
   const walletId = event.pathParameters?.walletId;
 
   if (!walletId) {
@@ -124,7 +149,12 @@ export async function handlerUpdate(event: APIGatewayEvent) {
       };
     }
 
-    // TODO check that income pertains to user
+    if (existingWallet.userId !== userId) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      };
+    }
 
     const walletData = JSON.parse(event.body || '');
 
@@ -168,6 +198,9 @@ export async function handlerUpdate(event: APIGatewayEvent) {
 }
 
 export async function handlerDelete(event: APIGatewayEvent) {
+  const decodedToken = decodeToken(event);
+  const userId = decodedToken.sub; // Example: extracting the user ID
+
   const walletId = event.pathParameters?.walletId;
 
   if (!walletId) {
@@ -187,7 +220,12 @@ export async function handlerDelete(event: APIGatewayEvent) {
       };
     }
 
-    // TODO check that wallet pertains to user
+    if (existingWallet.userId !== userId) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      };
+    }
 
     const [incomes, expenses] = await Promise.all([
       getAllIncomesForWallet(walletId),
@@ -295,96 +333,3 @@ async function getAllExpensesForWallet(walletId: string) {
     throw error;
   }
 }
-
-// export const handler: Handler = async (event, context) => {
-//
-//   const method = event.requestContext.http.method;
-//
-//   if (method === 'GET') {
-//     return await getHello(event)
-//   } else if (method === 'POST') {
-//     return await save(event);
-//   } else {
-//     return {
-//       statusCode: 400,
-//       body: 'Not a valid operation'
-//     };
-//   }
-// };
-//
-// async function save(event : any) {
-//   const name = event.queryStringParameters.name;
-//
-//   const item = {
-//     name: name,
-//     date: Date.now(),
-//   };
-//
-//   console.log(item);
-//   const savedItem = await saveItem(item);
-//
-//   return {
-//     statusCode: 200,
-//     body: JSON.stringify(savedItem),
-//   };
-// };
-//
-// async function getHello(event : any ) {
-//   const name = event.queryStringParameters.name;
-//
-//   const item = await getItem(name);
-//
-//   if (item !== undefined && item.date) {
-//     const d = new Date(item.date);
-//
-//     const message = `Was greeted on ${d.getDate()}/${
-//       d.getMonth() + 1
-//     }/${d.getFullYear()}`;
-//
-//     return {
-//       statusCode: 200,
-//       body: JSON.stringify(message),
-//     };
-//
-//   } else {
-//
-//     const message = "Nobody was greeted with that name";
-//     return {
-//       statusCode: 200,
-//       body: JSON.stringify(message),
-//     };
-//   }
-// };
-//
-// async function getItem(name : string ) {
-//
-//   const params : DynamoDB.DocumentClient.GetItemInput = {
-//     Key: {
-//       name: name,
-//     },
-//     TableName: TABLE_NAME,
-//   };
-//
-//   return dynamo
-//     .get(params)
-//     .promise()
-//     .then((result) => {
-//       console.log(result);
-//       return result.Item;
-//     });
-// }
-//
-// async function saveItem(item : any) {
-//
-//   const params : DynamoDB.DocumentClient.PutItemInput = {
-//     TableName: TABLE_NAME,
-//     Item: item,
-//   };
-//
-//   return dynamo
-//     .put(params)
-//     .promise()
-//     .then(() => {
-//       return item;
-//     });
-// }

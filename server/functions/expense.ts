@@ -1,9 +1,13 @@
 import { Handler, APIGatewayEvent } from 'aws-lambda';
 import { DynamoDB } from 'aws-sdk';
+import {decodeToken} from "../utils/utils";
 
 const dynamoDB = new DynamoDB.DocumentClient();
 
 export async function handlerCreate(event: APIGatewayEvent) {
+  const decodedToken = decodeToken(event);
+  const userId = decodedToken.sub; // Example: extracting the user ID
+
   const walletId = event.pathParameters?.walletId;
 
   try {
@@ -22,7 +26,12 @@ export async function handlerCreate(event: APIGatewayEvent) {
       };
     }
 
-    // TODO check that wallet pertains to user
+    if (wallet.userId !== userId) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      };
+    }
 
     // Parse event.body to get expense data
     const expenseData = JSON.parse(event.body || '');
@@ -34,6 +43,7 @@ export async function handlerCreate(event: APIGatewayEvent) {
       ...expenseData,
       id: id, // Generate a random ID (replace with UUID or your ID generation logic)
       walletId: walletId,
+      userId: userId,
       createdAt: expenseTimestamp,
       updatedAt: expenseTimestamp,
     };
@@ -86,6 +96,9 @@ export async function handlerCreate(event: APIGatewayEvent) {
 }
 
 export async function handlerRead(event: APIGatewayEvent) {
+  const decodedToken = decodeToken(event);
+  const userId = decodedToken.sub; // Example: extracting the user ID
+
   const walletId = event.pathParameters?.walletId;
   const expenseId = event.pathParameters?.expenseId;
 
@@ -127,7 +140,12 @@ export async function handlerRead(event: APIGatewayEvent) {
       };
     }
 
-    // TODO check that expense pertains to user
+    if (Item.userId !== userId) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      };
+    }
 
     return {
       statusCode: 200,
@@ -142,6 +160,9 @@ export async function handlerRead(event: APIGatewayEvent) {
 }
 
 export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
+  const decodedToken = decodeToken(event);
+  const userId = decodedToken.sub; // Example: extracting the user ID
+
   const walletId = event.pathParameters?.walletId;
 
   if (!walletId) {
@@ -167,7 +188,12 @@ export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
       };
     }
 
-    // TODO check that wallet pertains to user
+    if (wallet.userId !== userId) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      };
+    }
 
     const params = {
       TableName: process.env.EXPENSE_TABLE_NAME || '',
@@ -195,6 +221,9 @@ export const handlerGetAll: Handler = async (event: APIGatewayEvent) => {
 };
 
 export async function handlerUpdate(event: APIGatewayEvent) {
+  const decodedToken = decodeToken(event);
+  const userId = decodedToken.sub; // Example: extracting the user ID
+
   const walletId = event.pathParameters?.walletId;
   const expenseId = event.pathParameters?.expenseId;
 
@@ -229,7 +258,12 @@ export async function handlerUpdate(event: APIGatewayEvent) {
       };
     }
 
-    // TODO check that expense pertains to user
+    if (existingExpense.userId !== userId) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      };
+    }
 
     const expenseData = JSON.parse(event.body || '');
 
@@ -307,6 +341,9 @@ export async function handlerUpdate(event: APIGatewayEvent) {
 }
 
 export async function handlerDelete(event: APIGatewayEvent) {
+  const decodedToken = decodeToken(event);
+  const userId = decodedToken.sub; // Example: extracting the user ID
+
   const walletId = event.pathParameters?.walletId;
   const expenseId = event.pathParameters?.expenseId;
 
@@ -341,7 +378,12 @@ export async function handlerDelete(event: APIGatewayEvent) {
       };
     }
 
-    // TODO check that expense pertains to user
+    if (existingExpense.userId !== userId) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      };
+    }
 
     const expenseParams = {
       TableName: process.env.EXPENSE_TABLE_NAME || '',
