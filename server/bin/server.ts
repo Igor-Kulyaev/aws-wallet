@@ -19,3 +19,21 @@ new ServerStack(app, 'CdkTypescriptStack', {
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
+
+// import { App } from 'aws-cdk-lib';
+// import { CognitoStack } from '../lib/cognito-stack';
+// import { WalletStack } from '../lib/wallet-stack';
+// import { IncomeStack } from '../lib/income-stack';
+// import { ExpenseStack } from '../lib/expense-stack';
+// import { UnprotectedStack } from '../lib/unprotected-stack';
+//
+// const app = new App();
+//
+// // Instantiate the cognito stack
+// const cognitoStack = new CognitoStack(app, 'CognitoStack');
+//
+// // Pass the user pool, the api, and the authorizer as props to the other stacks
+// const walletStack = new WalletStack(app, 'WalletStack', { cognito: cognitoStack.cognito, api: cognitoStack.api, authorizer: cognitoStack.authorizer });
+// const incomeStack = new IncomeStack(app, 'IncomeStack', { cognito: cognitoStack.cognito, api: cognitoStack.api, authorizer: cognitoStack.authorizer });
+// const expenseStack = new ExpenseStack(app, 'ExpenseStack', { cognito: cognitoStack.cognito, api: cognitoStack.api, authorizer: cognitoStack.authorizer });
+// const unprotectedStack = new UnprotectedStack(app, 'UnprotectedStack', { api: cognitoStack.api, authorizer: cognitoStack.authorizer });

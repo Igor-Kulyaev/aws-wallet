@@ -451,3 +451,21 @@ export class ServerStack extends Stack {
 
   }
 }
+
+// import { App } from 'aws-cdk-lib';
+// import { CognitoStack } from './cognito-stack';
+// import { WalletStack } from './wallet-stack';
+// import { IncomeStack } from './income-stack';
+// import { ExpenseStack } from './expense-stack';
+// import { UnprotectedStack } from './unprotected-stack';
+//
+// const app = new App();
+//
+// // Instantiate the cognito stack
+// const cognitoStack = new CognitoStack(app, 'CognitoStack');
+//
+// // Pass the user pool, the api, and the authorizer as props to the other stacks
+// const walletStack = new WalletStack(app, 'WalletStack', { cognito: cognitoStack.cognito, api: cognitoStack.api, authorizer: cognitoStack.authorizer });
+// const incomeStack = new IncomeStack(app, 'IncomeStack', { cognito: cognitoStack.cognito, api: cognitoStack.api, authorizer: cognitoStack.authorizer });
+// const expenseStack = new ExpenseStack(app, 'ExpenseStack', { cognito: cognitoStack.cognito, api: cognitoStack.api, authorizer: cognitoStack.authorizer });
+// const unprotectedStack = new UnprotectedStack(app, 'UnprotectedStack', { api: cognitoStack.api, authorizer: cognitoStack.authorizer });
